@@ -2,9 +2,10 @@ import curses
 import woosh.prompt
 import woosh.config
 import woosh.runner
-import woosh.builtin_env
+# import woosh.builtin_env
 import woosh.completer
 import woosh.parser
+import woosh.commands
 
 
 def run_loop():
@@ -15,7 +16,7 @@ def run_loop():
 
     config = woosh.config.load()
     prompt = woosh.prompt.generate(config['prompt'])
-    Shell(screen, prompt, config, woosh.builtin_env.BUILTIN_ENV).run_loop()
+    Shell(screen, prompt, config, woosh.commands.BUILTIN_ENV).run_loop()
 
 
 class Shell:
@@ -98,16 +99,19 @@ class Shell:
 
         self.line, self.column = self.line + 1, 0
         self.a()
-        y = self.runner.run(self.l, self.env)
-        if y:
-            self.screen.addstr(str(y) + ' ' * 72)
-            self.line, self.column = self.line + 1, 0
+        y = self.runner.run(self.l, self.env).as_string().split('\n')
+        if y and y[0] != 'nil':
+            for z, yl in enumerate(y):
+                self.screen.addstr(self.line + z, 0, str(yl))
+
+            self.line, self.column = self.line + len(y) + 1, 0
             self.a()
             self.prompt.echo(self)
             self.z = self.prompt.size
             self.column = self.z
         else:
-            self.screen.addstr(self.prompt)
+            self.prompt.echo(self)
+            self.z = self.prompt.size
             self.column = self.z
 
         self.real_history[-1] = self.l

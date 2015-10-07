@@ -1,6 +1,9 @@
 class Kind:
     pass
 
+    def as_string(self):
+        return '(a confused woo object)'
+
 
 class Base(Kind):
 
@@ -16,6 +19,12 @@ class Struct(Kind):
         for slot, cell in slots.items():
             self.slots[slot] = cell
 
+    def as_string(self):
+        return '{0}({1})'.format(self.label,
+                                 ' '.join('{0} {1}'.format(slot, cell.as_string())
+                                          for slot, cell
+                                          in self.slots.items()))
+
 
 class Fun(Kind):
 
@@ -29,14 +38,17 @@ class Fun(Kind):
 class ArgType(Kind):
 
     def __init__(self, a):
-        self.label, self.woo_type = a
+        self.label, self.woo_type = list(a)[:2]
 
 
 class Kwarg(Kind):
 
     def __init__(self, label, t):
         self.label = label
-        self.default, self.woo_type = t
+        self.woo_type, self.default = t
+
+    def as_string(self):
+        return '@{0}={1}'.format(self.label, self.default)
 
 
 class List(Kind):
@@ -47,6 +59,9 @@ class List(Kind):
     @property
     def methods(self):
         return type(self).methods
+
+    def as_string(self):
+        return '[{0}]'.format(self.element_type.as_string())
 
 
 class Map(Kind):
@@ -59,6 +74,30 @@ class Map(Kind):
     def methods(self):
         return type(self).methods
 
+    def as_string(self):
+        return '\{{0}:{1}\}'.format(self.key_type.as_string(), self.value_type.as_string())
+
+
+class WException(Kind):
+
+    def __init__(self):
+        pass
+
+    def as_string(self):
+        return 'WException'
+
 
 class Nil(Kind):
     pass
+
+    def as_string(self): return 'nil'
+
+
+class WooNilS:
+
+    def __init__(self):
+        self.woo_type = Nil
+
+    def as_string(self): return 'nil'
+
+WooNil = WooNilS()

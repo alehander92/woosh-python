@@ -9,7 +9,7 @@ class WooError(Exception):
 
 def complete(code, env):
     try:
-        woo_type, expected, tokens = woosh.parser.parse(code, env)
+        woo_type, expected, tokens = woosh.parser.parse_broken(code, env)
     except (CompletionError, woosh.parser.WooError, ValueError):
         return []
 

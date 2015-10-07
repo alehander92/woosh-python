@@ -1,9 +1,12 @@
 prompt: 
-  pattern: '{username}@{host}~{time} ({branch}) '
+  pattern: '{time}~{username}@{branch} {pwd} '
   username: [white, bold]
   host:     green
   time:     blue
   branch:   red
+  repo:     white
+  pwd:      white
+
 
 settings:
   label: 'sofia'

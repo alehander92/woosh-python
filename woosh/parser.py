@@ -1,3 +1,6 @@
+import woosh.grammar
+import woosh.converter
+
 TOKEN_FUN, TOKEN_PATH, TOKEN_METHOD, TOKEN_INT, TOKEN_ARG = range(5)
 
 LITERAL_TYPES = {'Path': 'path', 'Int': 'int'}
@@ -5,6 +8,11 @@ LITERAL_TYPES = {'Path': 'path', 'Int': 'int'}
 
 class WooError(Exception):
     pass
+
+
+def parse(code):
+    parsed = woosh.grammar.WooGrammar.parse(code)
+    return woosh.converter.Converter().convert(parsed)
 
 
 def extract_type(tokens, env):
@@ -77,7 +85,7 @@ def tokenize(s):
     return tokens
 
 
-def parse(current, env):
+def parse_broken(current, env):
     tokens = tokenize(current)
     if tokens == []:
         return None, [], []

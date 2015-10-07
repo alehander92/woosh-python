@@ -3,12 +3,40 @@ import platform
 import datetime
 import subprocess
 import re
+import os
+import os.path
+
+FN = open(os.devnull, 'w')
+
+
+def git_branch():
+    try:
+        return subprocess.check_output(['git', 'branch'], stderr=subprocess.STDOUT).strip()
+    except subprocess.CalledProcessError:
+        return ''
+
+
+def git_repo():
+    try:
+        return subprocess.check_output(['git', 'rev-parse', '--show-toplevel'], stderr=subprocess.STDOUT).strip().split(b'/')[-1]
+    except subprocess.CalledProcessError:
+        return ''
+
+
+def display_pwd():
+    pwd = os.getcwd()
+    if pwd == os.path.expanduser('~'):
+        return '~'
+    else:
+        return pwd.split('/')[-1]
 
 LOADS = {
     'username': getpass.getuser,
     'host': lambda: '-'.join(platform.node().split('-')[1:]),
     'time': lambda: datetime.datetime.now().strftime('%H:%M'),
-    'branch': lambda: subprocess.check_output(['git', 'branch']).strip()
+    'branch': git_branch,
+    'repo': git_repo,
+    'pwd': display_pwd
 }
 
 # {username}@{host}~{time}

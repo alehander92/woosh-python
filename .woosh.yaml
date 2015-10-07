@@ -21,6 +21,7 @@ style:
   token_arg: green
   token_int: blue
   token_string: cyan
+  token_block: white
   error: orange
   font: default
   size: default

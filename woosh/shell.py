@@ -99,7 +99,9 @@ class Shell:
 
         self.line, self.column = self.line + 1, 0
         self.a()
-        y = self.runner.run(self.l, self.env).as_string().split('\n')
+        # y = self.runner.run(self.l, self.env).as_string().split('\n')
+        y0 = self.runner.run(self.l, self.env)
+        y = y0.as_string().split('\n')
         if y and y[0] != 'nil':
             for z, yl in enumerate(y):
                 self.screen.addstr(self.line + z, 0, str(yl))

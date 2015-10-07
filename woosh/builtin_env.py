@@ -1,6 +1,7 @@
 import woosh.env
 import woosh.woo_types as woo_types
 import woosh.woo_instances as woo_instances
+import types
 
 woo_string = woo_types.Base('String')
 woo_int = woo_types.Base('Int')
@@ -13,7 +14,7 @@ values = {
 }
 
 woo_mode = woo_types.Struct(
-    'Mode', other=woo_string, group=woo_string, owner=woo_string)
+    'Mode', other=woo_string, group=woo_string, owner=woo_string, other_id=woo_int, group_id=woo_int, owner_id=woo_int)
 
 woo_datetime = woo_types.Struct('Datetime', year=woo_int, month=woo_int,
                                 day=woo_int, hour=woo_int, minute=woo_int, second=woo_int)
@@ -52,5 +53,21 @@ values['List'].methods = {
 }
 
 values.update({'WException': woo_types.WException()})
+
+
+def resourse_as_string(s, self):
+    return '{0} {1} {2}'.format(self.slots['mode'].as_string(),
+                                self.slots['size'].as_string(), self.slots['path'].as_string())
+
+
+def mode_as_string(s, self):
+    return '{0}{1}{2}'.format(self.slots['owner_id'].as_string(),
+                              self.slots['group_id'].as_string(),  self.slots['other_id'].as_string())
+
+values['Resource'].slots['as_string'] = types.MethodType(
+    resourse_as_string, values['Resource'])
+
+values['Mode'].slots['as_string'] = types.MethodType(
+    mode_as_string, values['Resource'])
 
 BUILTIN_ENV = woosh.env.Env(None, values)

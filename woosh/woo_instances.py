@@ -27,6 +27,8 @@ class WooStruct(WooObject):
         self.woo_type = struct
 
     def as_string(self):
+        if 'as_string' in self.woo_type.slots:
+            return self.woo_type.slots['as_string'](self)
         return '{0} ({1})'.format(self.woo_type.label,
                                   ' '.join('{0} {1}'.format(slot, cell.as_string())
                                            for slot, cell

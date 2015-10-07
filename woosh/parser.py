@@ -97,10 +97,10 @@ def tokenize(s):
     # tokens[1:-1] = [classify_token(t) for t in token_strings[1:-1]]
     tokens[-1] = classify_token(token_strings[-1],
                                 first=False, finished=s[-1] == ' ', in_block=in_block)
-    if tokens[-1][0] == TOKEN_BLOCK or tokens[-1][0] == TOKEN_BLOCKOUT and not in_block:
-        raise WooError()
-    elif tokens[-1][0] == TOKEN_BLOCKOUT:
-        in_block = False
+    # if tokens[-1][0] == TOKEN_BLOCK or tokens[-1][0] == TOKEN_BLOCKOUT and not in_block:
+    #     raise WooError()
+    # elif tokens[-1][0] == TOKEN_BLOCKOUT:
+    #     in_block = False
     return tokens, in_block
 
 
@@ -143,4 +143,4 @@ def parse_broken(current, env):
 
 
 def token_name(token):
-    return ['token_fun', 'token_path', 'token_method', 'token_int', 'token_arg'][token]
+    return ['token_fun', 'token_path', 'token_method', 'token_int', 'token_arg', 'token_block'][token]

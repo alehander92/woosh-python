@@ -91,6 +91,10 @@ class Shell:
         self.a()
 
     def read_enter(self, _):
+        for l in range(self.line + 1, self.line + self.last_completion_end_line + 1):
+            self.screen.move(l, 0)
+            self.screen.clrtoeol()
+
         self.line, self.column = self.line + 1, 0
         self.a()
         y = self.runner.run(self.l, self.env)
@@ -170,7 +174,7 @@ class Shell:
         self.screen.move(self.line, self.column)
 
     def read_tab(self, _):
-        for l in range(self.line + 1, self.last_completion_end_line + 1):
+        for l in range(self.line + 1, self.line + self.last_completion_end_line + 1):
             self.screen.move(l, 0)
             self.screen.clrtoeol()
 

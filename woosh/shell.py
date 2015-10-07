@@ -4,6 +4,7 @@ import woosh.config
 import woosh.runner
 import woosh.builtin_env
 import woosh.completer
+import woosh.parser
 
 
 def run_loop():
@@ -240,10 +241,10 @@ class Shell:
 
     def extract_colors(self, s):
         try:
-            tokens = woosh.completer.tokenize(s)
-        except woosh.completer.CompletionError:
+            tokens = woosh.parser.tokenize(s)
+        except woosh.parser.ParserError:
             return [self.config['style']['error']] * len(s.split())
-        return [self.config['style'][woosh.completer.token_name(t[0])] for t in tokens]
+        return [self.config['style'][woosh.parser.token_name(t[0])] for t in tokens]
 
     def read_backspace(self, _):
         if self.column <= self.z:

@@ -1,1 +1,27 @@
-prompt: '{username}@{host}~{time} '
+prompt: 
+  pattern: '{username}@{host}~{time} ({branch}) '
+  username: [white, bold]
+  host:     green
+  time:     blue
+  branch:   red
+
+settings:
+  label: 'sofia'
+  tab_width: 22
+  max_completion_tab_height: 12
+  bash_literal: '%'
+
+style:
+  token_fun: blue
+  token_method: blue
+  token_path: red
+  token_arg: green
+  token_int: blue
+  token_string: cyan
+  error: orange
+  font: default
+  size: default
+  result: orange
+  background: black
+
+  

@@ -58,3 +58,7 @@ class Map(Kind):
     @property
     def methods(self):
         return type(self).methods
+
+
+class Nil(Kind):
+    pass

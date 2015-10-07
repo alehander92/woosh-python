@@ -40,6 +40,8 @@ def complete_path(woo_type, token, env, finished=True):
 
 def complete_method(woo_type, token, env, finished=True):
     # returns a list with the matching methods of woo_type
+    if not hasattr(woo_type.return_type, 'methods'):
+        return []
     return ['{0}{1}'.format('#' if m[0].isalpha() else '', m)
             for m in woo_type.return_type.methods
             if finished or m.startswith(token[1:])]
@@ -86,18 +88,18 @@ def classify_token(token, first=False, finished=True):
     elif token[0] == '@':
         for t in token[1:]:
             if not (t.isalnum() or t in '-_~'):
-                raise ValueError()
+                raise CompletionError()
         return TOKEN_ARG, token
 
     elif token[0] == '#':
         for t in token[1:]:
             if not (t.isalnum() or t in '-_~'):
-                raise ValueError()
+                raise CompletionError()
 
         return TOKEN_METHOD, token
 
     else:
-        raise ValueError()
+        raise CompletionError()
 
 
 def tokenize(s):
@@ -134,8 +136,11 @@ def parse(current, env):
     expected = []
     if tokens[-1][0] in [TOKEN_FUN, TOKEN_METHOD]:
         if finished_token:
-            if woo_type.arg_types and woo_type.arg_types[0].label in LITERAL_TYPES:
-                expected = [LITERAL_TYPES[woo_type.arg_types[0].label]]
+            # print(woo_type.arg_types[0].woo_type.__dict__)
+            # input()
+            if woo_type.arg_types and woo_type.arg_types[0].woo_type.label in LITERAL_TYPES:
+                expected = [LITERAL_TYPES[
+                    woo_type.arg_types[0].woo_type.label]]
             expected.extend(['arg', 'method'])
         else:
             expected = ['fun' if tokens[-1][0]
@@ -153,3 +158,7 @@ def parse(current, env):
             expected = ['arg']
 
     return woo_type, expected, tokens
+
+
+def token_name(token):
+    return ['token_fun', 'token_path', 'token_method', 'token_int', 'token_arg'][token]

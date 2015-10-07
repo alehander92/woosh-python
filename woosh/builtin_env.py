@@ -38,15 +38,26 @@ values.update({'ls': woo_instances.WooFun('ls', [],
                                                             True, woo_bool)},
                                                         return_type=woo_types.List(values['Path'])))})
 
+values.update({'cd': woo_instances.WooFun('cd', [],
+                                          woo_types.Fun(arg_types=[('dir', values['Path'])],
+                                                        return_type=woo_types.Nil()))})
+
 values.update({'List': woo_types.List, 'Map': woo_types.Map})
 
 values['List'].methods = {
-    '|':	woo_instances.WooFun('|', [],
-                              woo_types.Fun(arg_types=[('self', values['List']), ('transformator', woo_string)],
-                                            return_type=woo_types.List(woo_string))),
+    '|':    woo_instances.WooFun('|', [],
+                                 woo_types.Fun(arg_types=[('self', values['List']), ('transformator', woo_string)],
+                                               return_type=woo_types.List(woo_string))),
     '?':    woo_instances.WooFun('?', [],
                                  woo_types.Fun(arg_types=[('self', values['List']), ('check', woo_string)],
-                                               return_type=woo_types.List(woo_string)))
+                                               return_type=woo_types.List(woo_string))),
+    'sort_by': woo_instances.WooFun('?', [],
+                                    woo_types.Fun(arg_types=[('self', values['List']), ('cmp', woo_string)],
+                                                  return_type=woo_types.List(woo_string))),
+
+    'count': woo_instances.WooFun('?', [],
+                                  woo_types.Fun(arg_types=[('self', values['List'])],
+                                                return_type=woo_int))
 }
 
 BUILTIN_ENV = woosh.env.Env(None, values)

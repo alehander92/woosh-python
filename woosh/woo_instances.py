@@ -3,6 +3,7 @@ class WooObject:
     def __init__(self, woo_type, fields):
         self.woo_type = woo_type
         self.fields = fields
+        return {}
 
 
 class WooBase(WooObject):

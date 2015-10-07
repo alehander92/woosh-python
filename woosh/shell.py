@@ -46,12 +46,12 @@ class Shell:
     def run_loop(self):
         self.real_history = []
         self.line, self.column = 0, 0
-        self.z = len(self.prompt)
 
         self.parallel_history = []
 
         self.real_history.append('')
-        self.screen.addstr(self.prompt)
+        self.prompt.echo(self)
+        self.z = self.prompt.size
         self.column = self.z
         self.last_completion_end_line = 0
         self.last_key = None
@@ -98,7 +98,8 @@ class Shell:
             self.screen.addstr(str(y) + ' ' * 72)
             self.line, self.column = self.line + 1, 0
             self.a()
-            self.screen.addstr(self.prompt)
+            self.prompt.echo(self)
+            self.z = self.prompt.size
             self.column = self.z
         else:
             self.screen.addstr(self.prompt)
@@ -118,8 +119,10 @@ class Shell:
 
         self.doctor_who -= 1
         self.screen.move(self.line, self.z)
-        self.screen.addstr(self.history[self.doctor_who])
-        self.screen.addstr('        ')
+        self.screen.clrtoeol()
+
+        self.echo_with_colors(self.history[self.doctor_who])
+
         self.column = len(self.history[self.doctor_who]) + self.z
         self.a()
 
@@ -132,8 +135,10 @@ class Shell:
 
         self.doctor_who += 1
         self.screen.move(self.line, self.z)
-        self.screen.addstr(self.history[self.doctor_who])
-        self.screen.addstr('        ')
+        self.screen.clrtoeol()
+
+        self.echo_with_colors(self.history[self.doctor_who])
+
         self.column = len(self.history[self.doctor_who]) + self.z
         self.a()
 
@@ -176,8 +181,9 @@ class Shell:
                 token = self.l[h + 1:]
                 self.column = h + self.z + 1
                 self.a()
-                self.screen.addstr(self.completions[0][0])
                 self.l = self.l[:h + 1] + self.completions[0][0]
+                color = self.extract_color()
+                self.screen.addstr(self.completions[0][0], color)
                 self.column = self.z + len(self.l)
                 self.a()
                 return
@@ -190,7 +196,8 @@ class Shell:
             ex = False
             for j, tab in enumerate(self.completions):
                 if len(tab) > i:
-                    self.screen.move(self.line + i + 1, j * 48)
+                    self.screen.move(self.line + i + 1, j *
+                                     self.config['settings']['tab_width'])
                     self.screen.addstr(tab[i])
                     ex = True
             i += 1
@@ -209,16 +216,30 @@ class Shell:
         self.column += 1
 
         if self.column - 1 - self.z < len(self.l):
-            self.screen.addstr(
-                letter + self.l[self.column - 1 - self.z:])
             self.l = self.l[:self.column - 1 - self.z] + \
                 letter + self.l[self.column - 1 - self.z:]
+            color = self.extract_color()
+            self.screen.addstr(
+                letter + self.l[self.column - 1 - self.z:], color)
+
         else:
-            self.screen.addstr(letter)
             self.l += letter
+            color = self.extract_color()
+            self.screen.addstr(letter, color)
 
         # self.screen.addstr(str(self.line) + ' ' + str(self.column))
         self.a()
+
+    def extract_color(self):
+        return self.extract_colors(self.l)[-1]  # it's called
+        # only before addstr, so there is at least one token
+
+    def extract_colors(self, s):
+        try:
+            tokens = woosh.completer.tokenize(s)
+        except woosh.completer.CompletionError:
+            return [self.config['style']['error']] * len(s.split())
+        return [self.config['style'][woosh.completer.token_name(t[0])] for t in tokens]
 
     def read_backspace(self, _):
         if self.column <= self.z:
@@ -229,7 +250,7 @@ class Shell:
             self.a()
             self.screen.addstr(
                 self.l[self.column + 1 - self.z:] + ' ')
-            self.l = self.l[:self.column - self.z] + \
+            self.l = self.l[:self.column - self.z] +\
                 self.l[self.column + 1 - self.z:]
             self.a()
         else:
@@ -246,6 +267,22 @@ class Shell:
         self.column = self.z
         self.a()
 
+    def echo_with_colors(self, s):
+        colors = self.extract_colors(s)
+        l, token = 0, ''
+        assert len(colors) == len(s.split())
+        for c in s:
+            if c != ' ':
+                token += c
+            else:
+                if token:
+                    self.screen.addstr(token, colors[l])
+                    token = ''
+                    l += 1
+                self.screen.addstr(' ')
+        if token:
+            self.screen.addstr(token, colors[l])
+
     read_symbol = read_letter
 
 
@@ -253,6 +290,7 @@ def init():
     screen = curses.initscr()
     curses.noecho()
     curses.cbreak()
+    curses.start_color()
     screen.keypad(True)
     return screen
 

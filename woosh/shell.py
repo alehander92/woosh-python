@@ -1,7 +1,9 @@
 import curses
 import woosh.prompt
+import woosh.config
 import woosh.runner
 import woosh.builtin_env
+import woosh.completer
 
 
 def run_loop():
@@ -10,15 +12,17 @@ def run_loop():
 
     screen = init()
 
-    prompt = woosh.prompt.generate()
-    Shell(screen, prompt, woosh.builtin_env.BUILTIN_ENV).run_loop()
+    config = woosh.config.load()
+    prompt = woosh.prompt.generate(config['prompt'])
+    Shell(screen, prompt, config, woosh.builtin_env.BUILTIN_ENV).run_loop()
 
 
 class Shell:
 
-    def __init__(self, screen, prompt, env):
+    def __init__(self, screen, prompt, config, env):
         self.screen = screen
         self.prompt = prompt
+        self.config = config
         self.env = env
         self.runner = woosh.runner.Runner()
         self.init_handlers()
@@ -49,6 +53,8 @@ class Shell:
         self.real_history.append('')
         self.screen.addstr(self.prompt)
         self.column = self.z
+        self.last_completion_end_line = 0
+        self.last_key = None
 
         self.doctor_who = 0  # doctor who travels thru history
         self.tardis = False  # flag if we are travelling thru paraller history with doctor who
@@ -56,6 +62,7 @@ class Shell:
             key = self.screen.getkey()
             # self.display(self.handlers[key], 3, 4)
             self.handlers[key](key)
+            self.last_key = key
 
     @property
     def history(self):
@@ -88,7 +95,7 @@ class Shell:
         self.a()
         y = self.runner.run(self.l, self.env)
         if y:
-            self.screen.addstr(str(y))
+            self.screen.addstr(str(y) + ' ' * 72)
             self.line, self.column = self.line + 1, 0
             self.a()
             self.screen.addstr(self.prompt)
@@ -158,15 +165,37 @@ class Shell:
         self.screen.move(self.line, self.column)
 
     def read_tab(self, _):
-        completions = completer.complete(self.l, self.env)
+        for l in range(self.line + 1, self.last_completion_end_line + 1):
+            self.screen.move(l, 0)
+            self.screen.clrtoeol()
+
+        if self.last_key == '\t':
+            # finds first completion
+            if self.completions and self.completions[0]:
+                h = self.l.rfind(' ')
+                token = self.l[h + 1:]
+                self.column = h + self.z + 1
+                self.a()
+                self.screen.addstr(self.completions[0][0])
+                self.l = self.l[:h + 1] + self.completions[0][0]
+                self.column = self.z + len(self.l)
+                self.a()
+                return
+
+        self.completions = woosh.completer.complete(self.l, self.env)
         i = 0
+
+        ex = True
         while ex:
             ex = False
-            for tab in completions:
+            for j, tab in enumerate(self.completions):
                 if len(tab) > i:
-                    self.screen.move(self.line + 1, i * 20)
+                    self.screen.move(self.line + i + 1, j * 48)
                     self.screen.addstr(tab[i])
                     ex = True
+            i += 1
+
+        self.last_completion_end_line = i - 1
         self.a()
 
     def read_exit(self, _):

@@ -26,7 +26,7 @@ class Shell:
         self.handlers = {}
 
         for s in ['UP', 'DOWN', 'LEFT', 'RIGHT', 'ENTER']:
-            self.handlers['KEY_%s' % s] = getattr(self, 'read_%s' % s)
+            self.handlers['KEY_%s' % s] = getattr(self, 'read_%s' % s.lower())
 
         self.handlers[' '] = self.read_space
         self.handlers['\t'] = self.read_tab
@@ -40,14 +40,15 @@ class Shell:
     def run_loop(self):
         self.history = []
         self.line, self.column = 0, 0
-        self.z = len(prompt)
+        self.z = len(self.prompt)
 
         self.history.append('')
-        self.screen.addstr(prompt)
+        self.screen.addstr(self.prompt)
         self.y = self.z
 
         while True:
-            key = screen.getkey()
+            key = self.screen.getkey()
+            self.handlers[key](key)
 
     def read_enter(self):
         self.line, self.column = line + 1, 0
@@ -57,16 +58,42 @@ class Shell:
             self.screen.addstr(y)
             self.line, self.column = line + 1, 0
             self.screen.move(self.line, self.column)
-            self.screen.addstr(prompt)
+            self.screen.addstr(self.prompt)
             self.column = self.z
         else:
-            self.screen.addstr(prompt)
+            self.screen.addstr(self.prompt)
             self.column = self.z
 
         self.history.append('')
 
-    def read_letter(self):
+    def read_up(self):
         pass
+
+    def read_down(self):
+        pass
+
+    def read_left(self):
+        pass
+
+    def read_right(self):
+        pass
+
+    def read_space(self):
+        pass
+
+    def read_tab(self):
+        pass
+
+    def read_exit(self, _):
+        exit_woosh(self.screen)
+
+    def read_bash(self):
+        pass
+
+    def read_letter(self, letter):
+        pass
+
+    read_symbol = read_letter
 
 
 def init():

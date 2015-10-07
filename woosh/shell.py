@@ -7,6 +7,7 @@ import woosh.builtin_env
 def run_loop():
     # todo: add config handling
     # add option for reuse in an editor
+
     screen = init()
 
     prompt = woosh.prompt.generate()
@@ -25,11 +26,12 @@ class Shell:
     def init_handlers(self):
         self.handlers = {}
 
-        for s in ['UP', 'DOWN', 'LEFT', 'RIGHT', 'ENTER']:
+        for s in ['UP', 'DOWN', 'LEFT', 'RIGHT', 'ENTER', 'BACKSPACE', 'HOME', 'END']:
             self.handlers['KEY_%s' % s] = getattr(self, 'read_%s' % s.lower())
 
         self.handlers[' '] = self.read_space
         self.handlers['\t'] = self.read_tab
+        self.handlers['\n'] = self.read_enter
         self.handlers['%'] = self.read_bash
         self.handlers['\\'] = self.read_exit
 
@@ -38,60 +40,182 @@ class Shell:
                 self.handlers[chr(s)] = self.read_symbol
 
     def run_loop(self):
-        self.history = []
+        self.real_history = []
         self.line, self.column = 0, 0
         self.z = len(self.prompt)
 
-        self.history.append('')
-        self.screen.addstr(self.prompt)
-        self.y = self.z
+        self.parallel_history = []
 
+        self.real_history.append('')
+        self.screen.addstr(self.prompt)
+        self.column = self.z
+
+        self.doctor_who = 0  # doctor who travels thru history
+        self.tardis = False  # flag if we are travelling thru paraller history with doctor who
         while True:
             key = self.screen.getkey()
+            # self.display(self.handlers[key], 3, 4)
             self.handlers[key](key)
 
-    def read_enter(self):
-        self.line, self.column = line + 1, 0
-        self.screen.move(self.line, self.column)
-        y = self.runner.run(self.history[-1], self.env)
+    @property
+    def history(self):
+        if not self.tardis:
+            return self.real_history
+        else:
+            return self.parallel_history
+
+    @property
+    def l(self):
+        if not self.tardis:
+            return self.real_history[-1]
+        else:
+            return self.parallel_history[self.doctor_who]
+
+    @l.setter
+    def l(self, l):
+        if not self.tardis:
+            self.real_history[-1] = l
+        else:
+            self.parallel_history[self.doctor_who] = l
+
+    def display(self, obj, line, column=0):
+        self.screen.move(line, column)
+        self.screen.addstr(str(obj))
+        self.a()
+
+    def read_enter(self, _):
+        self.line, self.column = self.line + 1, 0
+        self.a()
+        y = self.runner.run(self.l, self.env)
         if y:
-            self.screen.addstr(y)
-            self.line, self.column = line + 1, 0
-            self.screen.move(self.line, self.column)
+            self.screen.addstr(str(y))
+            self.line, self.column = self.line + 1, 0
+            self.a()
             self.screen.addstr(self.prompt)
             self.column = self.z
         else:
             self.screen.addstr(self.prompt)
             self.column = self.z
 
-        self.history.append('')
+        self.real_history[-1] = self.l
+        self.real_history.append('')
+        self.doctor_who = len(self.real_history) - 1
+        self.tardis = False
 
-    def read_up(self):
-        pass
+    def read_up(self, _):
+        if self.doctor_who == 0:
+            return
+        if not self.tardis:
+            self.tardis = True
+            self.parallel_history = self.real_history[:]
 
-    def read_down(self):
-        pass
+        self.doctor_who -= 1
+        self.screen.move(self.line, self.z)
+        self.screen.addstr(self.history[self.doctor_who])
+        self.screen.addstr('        ')
+        self.column = len(self.history[self.doctor_who]) + self.z
+        self.a()
 
-    def read_left(self):
-        pass
+    def read_down(self, _):
+        if self.doctor_who == len(self.history) - 1:
+            return
+        if not self.tardis:
+            self.tardis = True
+            self.parallel_history = self.real_history[:]
 
-    def read_right(self):
-        pass
+        self.doctor_who += 1
+        self.screen.move(self.line, self.z)
+        self.screen.addstr(self.history[self.doctor_who])
+        self.screen.addstr('        ')
+        self.column = len(self.history[self.doctor_who]) + self.z
+        self.a()
 
-    def read_space(self):
-        pass
+    def read_left(self, _):
+        if self.column > self.z:
+            self.column -= 1
+        self.a()
 
-    def read_tab(self):
-        pass
+    def read_right(self, _):
+        self.column += 1
+        self.a()
+
+    def read_space(self, _):
+        # match = self.last_history_match(self.history[-1])
+        self.column += 1
+        if self.column - 1 - self.z < len(self.l):
+            self.screen.addstr(
+                ' ' + self.l[self.column - 1 - self.z:])
+            self.l = self.l[:self.column - 1 - self.z] + \
+                ' ' + self.l[self.column - 1 - self.z:]
+        else:
+            self.screen.addstr(' ')
+            self.l += ' '
+
+        # self.screen.addstr(' %s' % match[self.column - self.z:])
+        self.a()
+
+    def a(self):
+        self.screen.move(self.line, self.column)
+
+    def read_tab(self, _):
+        completions = completer.complete(self.l, self.env)
+        i = 0
+        while ex:
+            ex = False
+            for tab in completions:
+                if len(tab) > i:
+                    self.screen.move(self.line + 1, i * 20)
+                    self.screen.addstr(tab[i])
+                    ex = True
+        self.a()
 
     def read_exit(self, _):
         exit_woosh(self.screen)
 
-    def read_bash(self):
-        pass
+    def read_bash(self, _):
+        self.column += 1
+        self.screen.addstr('2')
 
     def read_letter(self, letter):
-        pass
+        self.column += 1
+
+        if self.column - 1 - self.z < len(self.l):
+            self.screen.addstr(
+                letter + self.l[self.column - 1 - self.z:])
+            self.l = self.l[:self.column - 1 - self.z] + \
+                letter + self.l[self.column - 1 - self.z:]
+        else:
+            self.screen.addstr(letter)
+            self.l += letter
+
+        # self.screen.addstr(str(self.line) + ' ' + str(self.column))
+        self.a()
+
+    def read_backspace(self, _):
+        if self.column <= self.z:
+            return
+
+        self.column -= 1
+        if self.column + 1 - self.z < len(self.l):
+            self.a()
+            self.screen.addstr(
+                self.l[self.column + 1 - self.z:] + ' ')
+            self.l = self.l[:self.column - self.z] + \
+                self.l[self.column + 1 - self.z:]
+            self.a()
+        else:
+            self.a()
+            self.l = self.l[:-1]
+            self.screen.addstr(' ')
+            self.a()
+
+    def read_end(self, _):
+        self.column = self.z + len(self.l)
+        self.a()
+
+    def read_home(self, _):
+        self.column = self.z
+        self.a()
 
     read_symbol = read_letter
 
@@ -110,3 +234,12 @@ def exit_woosh(screen):
     curses.echo()
     curses.endwin()
     exit()
+
+# screen = init()
+# screen.addstr('hello')
+# e = screen.getkey()
+# screen.addstr(e)
+# screen.move(0, 6)
+
+# f = screen.getkey()
+# exit_woosh(screen)

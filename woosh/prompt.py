@@ -11,7 +11,7 @@ FN = open(os.devnull, 'w')
 
 def git_branch():
     try:
-        return subprocess.check_output(['git', 'branch'], stderr=subprocess.STDOUT).strip()
+        return subprocess.check_output(['git', 'branch'], stderr=subprocess.STDOUT).split(b'\n')[0][2:]
     except subprocess.CalledProcessError:
         return ''
 

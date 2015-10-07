@@ -1,9 +1,10 @@
 import woosh.grammar
 import woosh.converter
 
-TOKEN_FUN, TOKEN_PATH, TOKEN_METHOD, TOKEN_INT, TOKEN_ARG = range(5)
+TOKEN_FUN, TOKEN_PATH, TOKEN_METHOD, TOKEN_INT, TOKEN_ARG, TOKEN_BLOCK = range(
+    6)
 
-LITERAL_TYPES = {'Path': 'path', 'Int': 'int'}
+LITERAL_TYPES = {'Path', 'Int'}
 
 
 class WooError(Exception):
@@ -25,7 +26,7 @@ def extract_type(tokens, env):
     return None
 
 
-def classify_token(token, first=False, finished=True):
+def classify_token(token, first=False, finished=True, in_block=False):
     if token == '' and first:
         return TOKEN_FUN, ''
     if token == '':
@@ -52,12 +53,15 @@ def classify_token(token, first=False, finished=True):
                 raise WooError()
         return TOKEN_ARG, token
 
-    elif token[0] == '#':
+    elif token[0] in '#|?':
         for t in token[1:]:
             if not (t.isalnum() or t in '-_~'):
                 raise WooError()
 
         return TOKEN_METHOD, token
+
+    elif token[0] == '{':
+        return TOKEN_BLOCK, token
 
     else:
         raise WooError()
@@ -73,20 +77,35 @@ def tokenize(s):
     token_strings = s.split()
     tokens = [None] * len(token_strings)
     if not token_strings:
-        return []
+        return [], False
     elif len(token_strings) == 1:
         return [classify_token(
-            token_strings[0], first=True, finished=s[-1] == ' ')]
+            token_strings[0], first=True, finished=s[-1] == ' ')], False
 
     tokens[0] = classify_token(token_strings[0], first=True, finished=True)
-    tokens[1:-1] = [classify_token(t) for t in token_strings[1:-1]]
+    in_block = False
+    for i, t in enumerate(token_strings[1:-1]):
+        type, tokens[i + 1] = classify_token(t, in_block=in_block)
+        if type == TOKEN_BLOCK:
+            in_block = True
+        elif type == TOKEN_BLOCKOUT:
+            if in_block:
+                in_block = False
+            else:
+                raise WooError()
+
+    # tokens[1:-1] = [classify_token(t) for t in token_strings[1:-1]]
     tokens[-1] = classify_token(token_strings[-1],
-                                first=False, finished=s[-1] == ' ')
-    return tokens
+                                first=False, finished=s[-1] == ' ', in_block=in_block)
+    if tokens[-1][0] == TOKEN_BLOCK or tokens[-1][0] == TOKEN_BLOCKOUT and not in_block:
+        raise WooError()
+    elif tokens[-1][0] == TOKEN_BLOCKOUT:
+        in_block = False
+    return tokens, in_block
 
 
 def parse_broken(current, env):
-    tokens = tokenize(current)
+    tokens, in_block = tokenize(current)
     if tokens == []:
         return None, [], []
 
@@ -100,8 +119,7 @@ def parse_broken(current, env):
             # print(woo_type.arg_types[0].woo_type.__dict__)
             # input()
             if woo_type.arg_types and woo_type.arg_types[0].woo_type.label in LITERAL_TYPES:
-                expected = [LITERAL_TYPES[
-                    woo_type.arg_types[0].woo_type.label]]
+                expected = [woo_type.arg_types[0].woo_type.label.lower()]
             expected.extend(['arg', 'method'])
         else:
             expected = ['fun' if tokens[-1][0]
@@ -117,6 +135,9 @@ def parse_broken(current, env):
             expected = ['arg', 'method']
         else:
             expected = ['arg']
+
+    elif tokens[-1][0] == TOKEN_BLOCK:
+        expected = ['anon_var', 'path']
 
     return woo_type, expected, tokens
 

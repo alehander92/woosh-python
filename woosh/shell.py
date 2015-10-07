@@ -245,8 +245,8 @@ class Shell:
 
     def extract_colors(self, s):
         try:
-            tokens = woosh.parser.tokenize(s)
-        except woosh.parser.ParserError:
+            tokens, _ = woosh.parser.tokenize(s)
+        except woosh.parser.WooError:
             return [self.config['style']['error']] * len(s.split())
         return [self.config['style'][woosh.parser.token_name(t[0])] for t in tokens]
 

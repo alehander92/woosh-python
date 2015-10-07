@@ -1,5 +1,5 @@
 prompt: 
-  pattern: '{time}~{username}@{branch} {pwd} '
+  pattern: '{time}~{username}@ {branch} {pwd} '
   username: [white, bold]
   host:     green
   time:     blue
@@ -10,7 +10,7 @@ prompt:
 
 settings:
   label: 'sofia'
-  tab_width: 22
+  tab_width: 42
   max_completion_tab_height: 12
   bash_literal: '%'
 
